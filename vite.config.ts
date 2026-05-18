@@ -11,6 +11,7 @@ export default defineConfig({
     server: {
       port: 3002,
       strictPort: false,
+      allowedHosts: ['lintaspoin.dite.my.id', 'localhost', '127.0.0.1'],
     },
   },
 });
