@@ -48,6 +48,19 @@ export const Route = createRootRoute({
     ],
     links: [
       {
+        rel: "preconnect",
+        href: "https://fonts.googleapis.com",
+      },
+      {
+        rel: "preconnect",
+        href: "https://fonts.gstatic.com",
+        crossOrigin: "anonymous",
+      },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=Merriweather:wght@400;700;900&display=swap",
+      },
+      {
         rel: "stylesheet",
         href: appCss,
       },
