@@ -4,9 +4,10 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
-    "dev": "vite dev",
-    "build": "vite build",
-    "build:dev": "vite build --mode development",
+    "ensure-db": "node scripts/ensure-db.js",
+    "dev": "npm run ensure-db && vite dev",
+    "build": "npm run ensure-db && vite build",
+    "build:dev": "npm run ensure-db && vite build --mode development",
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",

@@ -55,23 +55,46 @@ async function initDb() {
     }
 
     const schema = fs.readFileSync(schemaPath, 'utf-8');
-    const statements = schema
-      .split(';')
-      .map(s => s.trim())
-      .filter(s => s.length > 0 && !s.startsWith('--'));
+    
+    // Parse statements more carefully
+    const statements = [];
+    let currentStatement = '';
+    
+    for (const line of schema.split('\n')) {
+      const trimmed = line.trim();
+      
+      // Skip comments and empty lines
+      if (!trimmed || trimmed.startsWith('--')) {
+        continue;
+      }
+      
+      currentStatement += ' ' + line;
+      
+      // If line ends with semicolon, we have a complete statement
+      if (trimmed.endsWith(';')) {
+        const stmt = currentStatement.trim();
+        if (stmt.length > 0) {
+          statements.push(stmt.slice(0, -1)); // Remove trailing semicolon
+        }
+        currentStatement = '';
+      }
+    }
+
+    console.log(`📋 Found ${statements.length} SQL statements to execute\n`);
 
     let count = 0;
-    for (const statement of statements) {
+    for (let i = 0; i < statements.length; i++) {
+      const statement = statements[i].trim();
       try {
         db.exec(statement);
         count++;
       } catch (error) {
-        console.warn(`⚠️  Warning on statement ${count}:`, error.message);
+        console.warn(`⚠️  Warning on statement ${i + 1}:`, error.message);
       }
     }
 
     console.log(`\n✅ Database initialized successfully!`);
-    console.log(`📊 Executed ${count} SQL statements`);
+    console.log(`📊 Executed ${count}/${statements.length} SQL statements`);
     console.log(`\n📋 Default data seeded:`);
     
     // Show stats

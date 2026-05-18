@@ -20,6 +20,16 @@ dist-ssr
 .wrangler/
 .dev.vars
 
+# Database (generated)
+data/
+*.db
+*.db-shm
+*.db-wal
+
+# Environment configuration (local)
+.env.local
+.env.*.local
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -12,6 +12,37 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
+// Password strength checker
+function getPasswordStrength(password: string) {
+  let strength = 0;
+  if (password.length >= 8) strength++;
+  if (password.length >= 12) strength++;
+  if (/[a-z]/.test(password)) strength++;
+  if (/[A-Z]/.test(password)) strength++;
+  if (/[0-9]/.test(password)) strength++;
+  if (/[^a-zA-Z0-9]/.test(password)) strength++;
+  return Math.min(strength, 5);
+}
+
+function PasswordStrengthIndicator({ password }: { password: string }) {
+  const strength = getPasswordStrength(password);
+  const strengthLabels = ["Sangat Lemah", "Lemah", "Cukup", "Kuat", "Sangat Kuat"];
+  const strengthColors = ["bg-red-500", "bg-orange-500", "bg-yellow-500", "bg-blue-500", "bg-green-500"];
+  
+  if (!password) return null;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex gap-1">
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className={`h-1.5 flex-1 rounded ${i < strength ? strengthColors[strength - 1] : "bg-muted"}`} />
+        ))}
+      </div>
+      <p className="text-xs text-muted-foreground">Kekuatan: {strengthLabels[Math.max(0, strength - 1)]}</p>
+    </div>
+  );
+}
+
 function AuthPage() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
@@ -30,6 +61,14 @@ function AuthPage() {
     setBusy(true);
     try {
       if (mode === "signup") {
+        // Warn if password might be weak
+        const strength = getPasswordStrength(password);
+        if (strength < 2) {
+          toast.warning("Password terlalu lemah. Coba tambah huruf besar, angka, dan simbol.");
+          setBusy(false);
+          return;
+        }
+
         const redirectUrl = `${window.location.origin}/admin`;
         const { error } = await supabase.auth.signUp({
           email,
@@ -39,8 +78,16 @@ function AuthPage() {
             data: { display_name: name || email.split("@")[0] },
           },
         });
-        if (error) throw error;
-        toast.success("Akun dibuat. Anda sekarang masuk.");
+        if (error) {
+          // Handle weak password error
+          if (error.message.includes("weak") || error.message.includes("guess")) {
+            toast.error("Password masih dianggap lemah. Coba: MyP@ssw0rd2026! atau kombinasi yang lebih unik.");
+          } else {
+            throw error;
+          }
+        } else {
+          toast.success("Akun dibuat. Anda sekarang masuk.");
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -81,7 +128,28 @@ function AuthPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
+            <Input 
+              id="password" 
+              type="password" 
+              required 
+              minLength={8}
+              value={password} 
+              onChange={(e) => setPassword(e.target.value)} 
+              placeholder={mode === "signup" ? "Min 8 karakter" : ""}
+            />
+            {mode === "signup" && (
+              <>
+                <PasswordStrengthIndicator password={password} />
+                <div className="mt-3 p-3 bg-muted rounded-lg text-xs text-muted-foreground space-y-1">
+                  <p className="font-semibold text-foreground">💡 Saran password yang kuat:</p>
+                  <p>✓ Campur huruf besar & kecil (A-Z, a-z)</p>
+                  <p>✓ Tambah angka & simbol (!@#$%)</p>
+                  <p>✓ Minimal 12 karakter</p>
+                  <p>✓ Hindarkan: nama, tanggal lahir, email</p>
+                  <p className="font-semibold text-foreground mt-2">Contoh: MyP@ssw0rd2026!</p>
+                </div>
+              </>
+            )}
           </div>
           <Button type="submit" className="w-full" disabled={busy}>
             {busy ? "Memproses…" : mode === "signin" ? "Masuk" : "Daftar"}
